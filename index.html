@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Berry Forager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #2a3324; --card: #f6f3ea; --ink: #1d1d1d; --soft: #5d5d55; --accent: #3f6b35; }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden;
+               font-family: "Open Sans", system-ui, sans-serif; color: var(--ink); }
+  canvas { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
+  body.running canvas { cursor: none; }
+  .overlay { position: fixed; inset: 0; display: grid; place-items: center;
+             background: url(assets/splash.jpg) center / cover; padding: 16px; box-sizing: border-box; }
+  .card { background: var(--card); border-radius: 14px; padding: 28px 30px; width: min(420px, 100%);
+          box-shadow: 0 12px 40px rgba(0,0,0,.35); box-sizing: border-box; }
+  h1 { margin: 0 0 4px; font-size: 24px; }
+  p.sub { margin: 0 0 18px; color: var(--soft); font-size: 14px; }
+  label { display: block; font-size: 13px; font-weight: 700; margin: 12px 0 4px; }
+  input[type=text], input[type=number] { width: 100%; box-sizing: border-box; padding: 9px 10px;
+          border: 1px solid #c9c4b5; border-radius: 8px; font: inherit; background: #fff; }
+  .row { display: flex; gap: 12px; } .row > div { flex: 1; }
+  .check { display: flex; align-items: center; gap: 8px; font-weight: 400; margin-top: 14px; }
+  button { margin-top: 20px; width: 100%; padding: 12px; border: 0; border-radius: 9px;
+           background: var(--accent); color: #fff; font: 700 16px "Open Sans", sans-serif; cursor: pointer; }
+  button.secondary { background: #d8d3c4; color: var(--ink); }
+  button:disabled { opacity: .6; cursor: progress; }
+  .keys { margin-top: 16px; font-size: 13px; color: var(--soft); line-height: 1.7; }
+  kbd { background: #fff; border: 1px solid #c9c4b5; border-bottom-width: 2px; border-radius: 5px;
+        padding: 0 6px; font: 600 12px "Open Sans", sans-serif; }
+  .err { color: #a3261f; font-size: 13px; margin-top: 10px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div class="overlay" id="setup">
+  <form class="card" id="form" autocomplete="off">
+    <h1>Berry Forager</h1>
+    <p class="sub">Foraging task (MVT build)</p>
+    <label for="participant">Participant ID</label>
+    <input type="text" id="participant" placeholder="anon">
+    <div class="row">
+      <div><label for="run">Run</label><input type="number" id="run" value="1" min="1"></div>
+      <div><label for="dur">Length (minutes)</label><input type="number" id="dur" value="10" min="1" step="0.5"></div>
+    </div>
+    <label for="seed">Seed <span style="font-weight:400;color:var(--soft)">(blank = random)</span></label>
+    <input type="text" id="seed" inputmode="numeric">
+    <label class="check"><input type="checkbox" id="fs" checked> Full screen</label>
+    <button type="submit" id="go" disabled>Loading…</button>
+    <div class="keys">
+      <kbd>Space</kbd> pick &nbsp;·&nbsp; <kbd>F</kbd> stay &nbsp;·&nbsp; <kbd>J</kbd> explore<br>
+      <kbd>D</kbd> MVT panel &nbsp;·&nbsp; <kbd>Esc</kbd> quit (saves data)
+    </div>
+    <div class="err" id="err" hidden></div>
+  </form>
+</div>
+
+<div class="overlay" id="done" hidden>
+  <div class="card">
+    <h1>Thanks!</h1>
+    <p class="sub" id="doneMsg">Your data file was downloaded.</p>
+    <button id="again">Download data again</button>
+    <button class="secondary" id="restart">Start a new run</button>
+  </div>
+</div>
+
+<script type="module">
+import { loadAssets } from './js/scene.js';
+import { main } from './js/task.js';
+
+const $ = id => document.getElementById(id);
+const q = new URLSearchParams(location.search);
+let assets;
+
+try {
+  [assets] = await Promise.all([loadAssets(), document.fonts.load('700 20px "Open Sans"')]);
+  $('go').disabled = false;
+  $('go').textContent = 'Start';
+} catch (e) {
+  $('err').hidden = false;
+  $('err').textContent = 'Could not load the task files: ' + e.message;
+}
+
+async function start(info, fullscreen) {
+  $('setup').hidden = true;
+  document.body.classList.add('running');
+  if (fullscreen && document.documentElement.requestFullscreen) {
+    try { await document.documentElement.requestFullscreen(); } catch (_) {}
+  }
+  const res = await main(info, $('c'), assets);
+  document.body.classList.remove('running');
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  $('doneMsg').textContent = res.outcome === 'quit_at_title'
+    ? `Quit before starting. The data file (${res.fileName}) was still downloaded.`
+    : `Your data file was downloaded: ${res.fileName}`;
+  $('done').hidden = false;
+  $('again').onclick = () => res.logger.download();
+}
+
+function sessionInfo() {
+  return {
+    participant: ($('participant').value || 'anon').trim() || 'anon',
+    run: String($('run').value || '1').trim() || '1',
+    run_duration_s: Math.max(1, parseFloat($('dur').value || '10')) * 60,
+    fullscreen: $('fs').checked,
+    scanner_mode: false,
+    seed: $('seed').value.trim(),
+    date: new Date().toISOString(),
+    platform: 'web',
+    user_agent: navigator.userAgent,
+    screen: [screen.width, screen.height],
+    device_pixel_ratio: window.devicePixelRatio,
+  };
+}
+
+$('form').addEventListener('submit', e => {
+  e.preventDefault();
+  if (!assets) return;
+  start(sessionInfo(), $('fs').checked);
+});
+$('restart').onclick = () => location.reload();
+
+// Test hook: ?auto&dur=<seconds>&seed=<n>&participant=<id>
+if (q.has('auto') && assets) {
+  const info = sessionInfo();
+  info.participant = q.get('participant') || 'test';
+  info.run_duration_s = parseFloat(q.get('dur') || '60');
+  info.seed = q.get('seed') || '';
+  start(info, false);
+}
+</script>
+</body>
+</html>

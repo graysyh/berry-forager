@@ -1,0 +1,62 @@
+{
+ "foliage_strip": {
+  "file": "foliage_strip.jpg",
+  "w": 2560,
+  "h": 896
+ },
+ "foliage_mean": [
+  61.195,
+  92.277,
+  46.939
+ ],
+ "berry": {
+  "file": "berry.png",
+  "w": 240,
+  "h": 256
+ },
+ "twig": {
+  "file": "twig.png",
+  "w": 139,
+  "h": 135
+ },
+ "travel_bush_full": {
+  "file": "travel_bush_full.png",
+  "w": 302,
+  "h": 136
+ },
+ "travel_bush_picked": {
+  "file": "travel_bush_picked.png",
+  "w": 302,
+  "h": 136
+ },
+ "enter_bush_full": {
+  "file": "enter_bush_full.png",
+  "w": 1536,
+  "h": 692
+ },
+ "walker_frames": [
+  "walker_0",
+  "walker_1"
+ ],
+ "walker_0": {
+  "file": "walker_0.png",
+  "w": 160,
+  "h": 237
+ },
+ "walker_1": {
+  "file": "walker_1.png",
+  "w": 84,
+  "h": 238
+ },
+ "walker_ref_h": 238,
+ "meadow": {
+  "file": "meadow.jpg",
+  "w": 1536,
+  "h": 1024
+ },
+ "splash": {
+  "file": "splash.jpg",
+  "w": 1536,
+  "h": 1024
+ }
+}

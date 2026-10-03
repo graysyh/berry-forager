@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><title>parity</title>
+<script type="module">
+import { PyRandom } from '../js/pyrandom.js';
+import { makeLadder } from '../js/ladder.js';
+import { jitter, jitterInt } from '../js/timing.js';
+import { ladderEv, expectedDurations, optimalPolicy } from '../js/mvt.js';
+const out = {};
+let r = new PyRandom(12345);
+out.rng = [...Array(5)].map(() => r.random())
+  .concat([...Array(20)].map(() => r.randint(-1, 1)))
+  .concat([...Array(20)].map(() => r.randrange(10)))
+  .concat([...Array(10)].map(() => r.choice([4.0, 8.0, 12.0])));
+const xs = [...Array(10).keys()]; r.shuffle(xs); out.shuffle = xs;
+out.uniform = r.uniform(0.9, 1.1);
+for (const seed of [0, 1, 42, 2**31 - 1]) { const q = new PyRandom(seed); out['seed' + seed] = [q.random(), q.random(), q.random()]; }
+r = new PyRandom(7);
+out.ladders = [...Array(300).keys()].map(n => { const l = makeLadder(n % 14, r);
+  return [l.values, l.edges, l.peak, l.floor, l.peakCenter, l.slotCounts]; });
+out.jitter = [...Array(20)].map(() => jitter(0.8, 3.0, r)).concat([...Array(20)].map(() => jitterInt(2, 6, r)));
+out.ev = [...Array(12).keys()].map(n => ladderEv(n));
+const [th, tt] = expectedDurations();
+out.durations = [th, tt];
+const pol = optimalPolicy(th, tt, null, 0.9, 0.02);
+out.policy = [pol.n_opt, pol.rate_opt, pol.flat_span, pol.marginal_at_opt];
+document.title = 'done'; window.RESULT = out;
+</script>
