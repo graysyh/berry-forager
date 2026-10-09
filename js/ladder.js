@@ -71,7 +71,8 @@ function growBunch(nominal, rng) {
 
 // {values, edges, peak, floor, peakCenter, slotCounts} — see ladder.py.
 export function makeLadder(nHarvests, rng, r0 = null) {
-  const peak = peakValue(nHarvests, r0);
+  let peak = peakValue(nHarvests, r0);
+  if (cfg.NO_EMPTY_BRANCHES) peak = Math.max(peak, 1);
   const values = tierValues(peak);
 
   if (values.length === 1) {
@@ -88,6 +89,13 @@ export function makeLadder(nHarvests, rng, r0 = null) {
   values.forEach((v, t) => {
     for (let c = 0; c < counts[t]; c++) columns.push(growBunch(v, rng));
   });
+  if (cfg.NO_EMPTY_BRANCHES) {
+    // At least 2 branches with berries, so the smallest bush is 1 + 1.
+    let have = columns.filter(v => v > 0).length;
+    for (let c = 0; c < columns.length && have < 2; c++) {
+      if (columns[c] <= 0) { columns[c] = 1; have += 1; }
+    }
+  }
   columns = shuffleColumns(columns, rng);
 
   const merged = [], slotCounts = [];
@@ -129,7 +137,28 @@ export function tierExpectedValue(v) { return v; }
 
 export function peakExpectedValue(lad) { return tierExpectedValue(lad.peak); }
 
+// Slot indices the highlight visits: every slot, or (NO_EMPTY_BRANCHES)
+// only those with berries.
+export function sweepSlots(lad) {
+  const out = [];
+  let slot = 0;
+  lad.values.forEach((v, i) => {
+    for (let k = 0; k < lad.slotCounts[i]; k++, slot++) {
+      if (!cfg.NO_EMPTY_BRANCHES || v > 0) out.push(slot);
+    }
+  });
+  return out;
+}
+
 export function chanceExpectedValue(lad) {
+  if (cfg.NO_EMPTY_BRANCHES) {
+    // A blind press lands on one of the visited (non-empty) branches.
+    let total = 0.0, n = 0;
+    lad.values.forEach((v, i) => {
+      if (v > 0) { total += tierExpectedValue(v) * lad.slotCounts[i]; n += lad.slotCounts[i]; }
+    });
+    return n ? total / n : 0.0;
+  }
   let total = 0.0;
   lad.values.forEach((v, i) => {
     total += tierExpectedValue(v) * (lad.edges[i + 1] - lad.edges[i]);

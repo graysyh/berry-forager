@@ -93,4 +93,12 @@ export const cfg = {
   MVT_FLAT_TOLERANCE: 0.02,
 
   SCANNER_MODE: false,
+
+  // Web-only trial variant (the /v2/ page turns it on; not in config.py).
+  // Bushes never run dry: the peak bottoms out at 1 and every bush keeps at
+  // least 2 branches with berries; the highlight hops only between branches
+  // that still have berries; the MVT "blind press" value averages over
+  // those branches only.
+  NO_EMPTY_BRANCHES: false,
+  VARIANT: 'v1',
 };

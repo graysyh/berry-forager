@@ -15,6 +15,16 @@ Differences from the PsychoPy task: no scanner mode (triggers, lead-in /
 lead-out); onsets are stamped at the browser's animation frame, so timing
 is good to about one refresh.
 
+## Version 2 (web only, on trial)
+
+`/v2/` (or `?v2` on the main page) runs a variant that is not in the
+PsychoPy task yet: bushes never run dry (the smallest bush has two branches
+with one berry each), the highlight only visits branches that still have
+berries, and the MVT "blind press" value averages over those branches only.
+It is one flag, `NO_EMPTY_BRANCHES` in `js/config.js`; the main page is
+unchanged and still matches the Python value for value. The data's meta file
+records `variant` (`v1` / `v2`).
+
 ## Development
 
 Serve the folder over HTTP (ES modules don't load from `file://`):

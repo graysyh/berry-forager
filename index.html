@@ -41,7 +41,7 @@
 <div class="overlay" id="setup">
   <form class="card" id="form" autocomplete="off">
     <h1>Berry Forager</h1>
-    <p class="sub">Foraging task (MVT build)</p>
+    <p class="sub" id="sub">Foraging task (MVT build)</p>
     <label for="participant">Participant ID</label>
     <input type="text" id="participant" placeholder="anon">
     <div class="row">
@@ -72,10 +72,18 @@
 <script type="module">
 import { loadAssets } from './js/scene.js';
 import { main } from './js/task.js';
+import { cfg } from './js/config.js';
 
 const $ = id => document.getElementById(id);
 const q = new URLSearchParams(location.search);
 let assets;
+
+// Version 2 (?v2, or the /v2/ page): no empty branches — see config.js.
+if (q.has('v2')) {
+  cfg.NO_EMPTY_BRANCHES = true;
+  cfg.VARIANT = 'v2';
+  $('sub').textContent = 'Foraging task (MVT build) · version 2';
+}
 
 try {
   [assets] = await Promise.all([loadAssets(), document.fonts.load('700 20px "Open Sans"')]);
@@ -112,6 +120,7 @@ function sessionInfo() {
     seed: $('seed').value.trim(),
     date: new Date().toISOString(),
     platform: 'web',
+    variant: cfg.VARIANT,
     user_agent: navigator.userAgent,
     screen: [screen.width, screen.height],
     device_pixel_ratio: window.devicePixelRatio,

@@ -6,7 +6,7 @@
 
 import { cfg } from './config.js';
 import { PyRandom, systemSeed } from './pyrandom.js';
-import { makeLadder, tierAt, chanceExpectedValue } from './ladder.js';
+import { makeLadder, tierAt, chanceExpectedValue, sweepSlots } from './ladder.js';
 import { jitter, jitterInt } from './timing.js';
 import { MvtTracker, describe } from './mvt.js';
 import { Sync } from './sync.js';
@@ -43,12 +43,16 @@ async function runMinigame(sync, scene, runDuration, lad, totalReward, ids) {
   const grabHold = jitter(...cfg.GRAB_HOLD_RANGE, rng);
   const feedbackHold = jitter(...cfg.FEEDBACK_HOLD_RANGE, rng);
 
+  // The highlight steps through `stops` (all slots, or only those with
+  // berries under NO_EMPTY_BRANCHES), one step every stepS.
+  const stops = sweepSlots(lad);
   let startSlot = 0, sweepDir = 1;
   if (cfg.RANDOM_SWEEP_START) {
-    startSlot = rng.randrange(cfg.GRID_SLOTS);
+    startSlot = rng.randrange(stops.length);
     sweepDir = rng.choice([-1, 1]);
   }
-  const sweepStartX = scene.slot_center_frac(startSlot);
+  const slotAt = t => stops[bounceSlot(startSlot, sweepDir, t, stepS, stops.length)];
+  const sweepStartX = scene.slot_center_frac(stops[startSlot]);
 
   const chanceEv = round(chanceExpectedValue(lad), 4);
   const tags = { ...ids, ladder_peak: lad.peak, ladder_chance_ev: f(chanceEv) };
@@ -89,15 +93,15 @@ async function runMinigame(sync, scene, runDuration, lad, totalReward, ids) {
     const tElapsed = sync.now() - sweepT0;
     // Pay the bunch that was ON SCREEN, not the one the maths reached.
     if (pressRunT !== null) {
-      pickSlot = bounceSlot(startSlot, sweepDir, lastDrawnT, stepS, cfg.GRID_SLOTS);
+      pickSlot = slotAt(lastDrawnT);
       break;
     }
     if (tElapsed >= timeout) {
       timedOut = true;
-      pickSlot = bounceSlot(startSlot, sweepDir, lastDrawnT, stepS, cfg.GRID_SLOTS);
+      pickSlot = slotAt(lastDrawnT);
       break;
     }
-    const drawSlot = bounceSlot(startSlot, sweepDir, tElapsed, stepS, cfg.GRID_SLOTS);
+    const drawSlot = slotAt(tElapsed);
     scene.beginFrame();
     scene.draw_patch();
     scene.draw_skyline(lad, 1.0, drawSlot);
