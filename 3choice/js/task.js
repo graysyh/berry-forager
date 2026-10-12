@@ -43,9 +43,13 @@ async function runMinigame(sync, scene, runDuration, lad, totalReward, ids) {
   const grabHold = jitter(...cfg.GRAB_HOLD_RANGE, rng);
   const feedbackHold = jitter(...cfg.FEEDBACK_HOLD_RANGE, rng);
 
-  // The highlight steps through `stops` (all slots, or only those with
-  // berries under NO_EMPTY_BRANCHES), one step every stepS.
-  const stops = sweepSlots(lad);
+  // The highlight steps through `stops` (only slots with berries, see
+  // SKIP_EMPTY_BRANCHES), one step every stepS. A bare branch has none:
+  // the timing runs over every slot as usual but nothing is highlighted.
+  let stops = sweepSlots(lad);
+  const bare = !stops.length;
+  if (bare) stops = [...Array(cfg.GRID_SLOTS).keys()];
+  const shown = slot => bare ? null : slot;
   let startSlot = 0, sweepDir = 1;
   if (cfg.RANDOM_SWEEP_START) {
     startSlot = rng.randrange(stops.length);
@@ -104,7 +108,7 @@ async function runMinigame(sync, scene, runDuration, lad, totalReward, ids) {
     const drawSlot = slotAt(tElapsed);
     scene.beginFrame();
     scene.draw_patch();
-    scene.draw_skyline(lad, 1.0, drawSlot);
+    scene.draw_skyline(lad, 1.0, shown(drawSlot));
     scene.draw_pick_note(empty);
     scene.drawHud(totalReward);
     await sync.flip();
@@ -128,7 +132,7 @@ async function runMinigame(sync, scene, runDuration, lad, totalReward, ids) {
       if (sync.now() >= runDuration) return { aborted: 'run_end' };
       if (sync.poll([cfg.KEY_QUIT]).length) return { aborted: 'abort' };
       scene.beginFrame();
-      scene.draw_grab(lad, pickSlot);
+      scene.draw_grab(lad, shown(pickSlot));
       scene.drawHud(totalReward);
       await sync.flip();
     }
@@ -147,7 +151,7 @@ async function runMinigame(sync, scene, runDuration, lad, totalReward, ids) {
     fbLast = now;
     scene.beginFrame();
     scene.draw_patch();
-    scene.draw_skyline(lad, 1.0, timedOut ? null : pickSlot);
+    scene.draw_skyline(lad, 1.0, timedOut ? null : shown(pickSlot));
     scene.draw_popup(dt);
     scene.draw_warning(dt);
     scene.drawHud(totalReward);
@@ -171,7 +175,7 @@ async function runMinigame(sync, scene, runDuration, lad, totalReward, ids) {
     press_time: pressRunT === null ? null : pressRunT - sweepT0,
     outcome_onset: outcomeT,
     hand_pos: timedOut ? null : handX,
-    pick_slot: timedOut ? null : pickSlot,
+    pick_slot: timedOut ? null : pickSlot, bare,
     tier_idx: tierIdx, tier_value: tierValue, reward,
     hand_speed: handSpeed, sweep_start_x: sweepStartX, sweep_dir: sweepDir,
   };
@@ -328,7 +332,7 @@ async function runPatch(sync, scene, logger, runId, patchId, runDuration, state)
     const nextLad = makeLadder(nHarvests, rng, patchR0);
     const pickSlot = res.pick_slot;
     const harvested = lad;
-    const bgDraw = () => { scene.draw_patch(); scene.draw_skyline(harvested, 1.0, pickSlot); };
+    const bgDraw = () => { scene.draw_patch(); scene.draw_skyline(harvested, 1.0, res.bare ? null : pickSlot); };
 
     const [choice, , , tGrid] = await runPrompt(sync, scene, logger, runDuration, {
       run_id: runId, patch_id: patchId, prompt_id: state.prompt_id,

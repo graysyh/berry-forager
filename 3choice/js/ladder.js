@@ -137,23 +137,23 @@ export function tierExpectedValue(v) { return v; }
 
 export function peakExpectedValue(lad) { return tierExpectedValue(lad.peak); }
 
-// Slot indices the highlight visits: every slot, or (NO_EMPTY_BRANCHES)
-// only those with berries.
+// Slot indices the highlight visits: every slot, or (NO_EMPTY_BRANCHES /
+// SKIP_EMPTY_BRANCHES) only those with berries — none on a bare branch.
+const skipEmpty = () => cfg.NO_EMPTY_BRANCHES || cfg.SKIP_EMPTY_BRANCHES;
+
 export function sweepSlots(lad) {
   const out = [];
   let slot = 0;
   lad.values.forEach((v, i) => {
     for (let k = 0; k < lad.slotCounts[i]; k++, slot++) {
-      if (!cfg.NO_EMPTY_BRANCHES || v > 0) out.push(slot);
+      if (!skipEmpty() || v > 0) out.push(slot);
     }
   });
-  // A branch stayed on until bare has no berries left to visit.
-  if (!out.length) for (let s = 0; s < cfg.GRID_SLOTS; s++) out.push(s);
   return out;
 }
 
 export function chanceExpectedValue(lad) {
-  if (cfg.NO_EMPTY_BRANCHES) {
+  if (skipEmpty()) {
     // A blind press lands on one of the visited (non-empty) branches.
     let total = 0.0, n = 0;
     lad.values.forEach((v, i) => {

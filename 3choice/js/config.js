@@ -116,6 +116,10 @@ export const cfg = {
   // that still have berries; the MVT "blind press" value averages over
   // those branches only.
   NO_EMPTY_BRANCHES: false,
+  // Three-choice copy: the highlight never visits a branch with no berries
+  // (on v1 bushes too, and the branch just picked when staying), and the
+  // MVT "blind press" value averages over the branches it does visit.
+  SKIP_EMPTY_BRANCHES: true,
   VARIANT: 'v1',
   TASK_COPY: '3choice',   // recorded in meta; this is the three-choice copy
 };

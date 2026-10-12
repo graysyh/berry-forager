@@ -12,6 +12,9 @@ at /berry-forager/3choice/:
    counts as `switch`. Harvest rows carry `branch_id` (0, 1, … within a
    bush); the stay gap is the `stay_branch` phase in the timeline. The MVT
    tracker and debug panel still only model switch vs leave.
+   The highlight never visits an empty branch (`SKIP_EMPTY_BRANCHES`, on in
+   both v1 and v2 here); a branch stayed on until bare shows "No berries
+   left on this branch" and no highlight.
 2. Travel: the walker passes a row of empty bushes, stopping to rummage in
    each (bush shakes, "?" bubble, then "empty"), and reaches the full bush
    at exactly the same travel time as before. Placeholder art; settings

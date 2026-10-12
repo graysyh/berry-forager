@@ -564,7 +564,7 @@ export class Scene {
     }
   }
   _emptyNote() {
-    this.v.text('No berries left on this bush', 0, this.hang_y - 0.11, 0.045,
+    this.v.text('No berries left on this branch', 0, this.hang_y - 0.11, 0.045,
                 COL_ON_BUSH, { bold: true });
   }
 
