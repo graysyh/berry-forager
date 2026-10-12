@@ -74,15 +74,17 @@ export const cfg = {
   // At the prompt: STAY on this branch (pick again from what is left on it,
   // the picked bunch now gone), SWITCH to another branch of the same bush
   // (the old "stay": pan + fresh, depleted ladder), or EXPLORE (travel).
-  // Placeholder: the gap after a branch stay is shorter than the switch
-  // gap (DECISION_GAP_RANGE), whole seconds on the onset grid.
-  STAY_GAP_RANGE: [1, 2],
-  // Travel: the walker stops at an empty bush every TRAVEL_SEARCH_EVERY_S
-  // of travel and rummages in it for TRAVEL_SEARCH_S. Cosmetic only — the
-  // travel duration is drawn exactly as before.
-  TRAVEL_SEARCH_S: 1.2,
-  TRAVEL_SEARCH_EVERY_S: 2.4,
-  TRAVEL_BUSH_SPACING: 0.24,
+  // A branch stay gets the same jittered, faded gap as a switch
+  // (DECISION_GAP_RANGE), just without the pan.
+  // Travel: an endless row of identical-looking bushes. The walker walks
+  // to the next one (TRAVEL_WALK_PER_BUSH_S) and searches it (at least
+  // TRAVEL_SEARCH_MIN_S; the travel time left over is shared out over the
+  // searches), so as many bushes are searched as fit the travel time; only
+  // the last one turns out to have berries. Cosmetic only — the travel
+  // duration is drawn exactly as before.
+  TRAVEL_WALK_PER_BUSH_S: 3.5,
+  TRAVEL_SEARCH_MIN_S: 2.0,
+  TRAVEL_BUSH_SPACING: 0.20,
   TRAVEL_WALKER_SCREEN_X: -0.12,
 
   // Keys (browser KeyboardEvent.key, mapped to PsychoPy names in sync.js)

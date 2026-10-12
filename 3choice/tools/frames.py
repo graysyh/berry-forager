@@ -34,7 +34,7 @@ with sync_playwright() as p:
     # Search fade, empty bush, travel walk frames
     shot('search_fade', 'scene.draw_search(a); scene.drawHud(5); scene.draw_search_fade(2.0);')
     # Travel past empty bushes (12 s trip): walking, rummaging, "empty", arrival
-    for i, t in enumerate([0.6, 1.6, 2.3, 7.0, 11.99]):
+    for i, t in enumerate([1.5, 4.5, 8.0, 10.0, 11.8]):
         shot(f'travel_{i}', f'''if ({i} === 0) scene.begin_travel(12);
               scene.draw_travel({t}, 12); scene.drawHud(5);''')
     br.close()

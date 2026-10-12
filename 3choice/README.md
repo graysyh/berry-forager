@@ -4,8 +4,8 @@
 at /berry-forager/3choice/:
 
 1. The prompt has three choices: **STAY** `F` (pick again on this branch:
-   the same bunches, the one just picked now bare, after a short
-   `STAY_GAP_RANGE` gap), **NEW BRANCH** `J` (the old "stay": pan to a fresh,
+   the same bunches, the one just picked now bare, after the same faded
+   `DECISION_GAP_RANGE` jitter as a switch, without the pan), **NEW BRANCH** `J` (the old "stay": pan to a fresh,
    depleted ladder after `DECISION_GAP_RANGE`) and **EXPLORE** `K` (travel).
    Data: `choice` is `stay` / `switch` / `leave` — note `stay` here is NOT
    the original build's `stay` (that is now `switch`). A missed prompt
@@ -15,10 +15,14 @@ at /berry-forager/3choice/:
    The highlight never visits an empty branch (`SKIP_EMPTY_BRANCHES`, on in
    both v1 and v2 here); a branch stayed on until bare shows "No berries
    left on this branch" and no highlight.
-2. Travel: the walker passes a row of empty bushes, stopping to rummage in
-   each (bush shakes, "?" bubble, then "empty"), and reaches the full bush
-   at exactly the same travel time as before. Placeholder art; settings
-   `TRAVEL_SEARCH_*`, `TRAVEL_BUSH_SPACING` in `js/config.js`.
+2. Travel: the walker goes along an endless row of bushes that all look
+   alike, stopping to search each one (bush shakes, "?" bubble) and walking
+   on, until one turns out to be full; nothing shows in advance which one.
+   It is slow on purpose: ~3.5 s walk per bush, the rest of the travel time
+   shared out over the searches (≥ 2 s each), so 1–3 bushes per trip. The
+   travel time itself is unchanged. Placeholder art; settings
+   `TRAVEL_WALK_PER_BUSH_S`, `TRAVEL_SEARCH_MIN_S`, `TRAVEL_BUSH_SPACING`
+   in `js/config.js`.
 
 Because of (1) this copy no longer matches the Python task value for
 value, so it has no parity tools.

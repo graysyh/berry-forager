@@ -350,17 +350,19 @@ async function runPatch(sync, scene, logger, runId, patchId, runDuration, state)
     }
     if (leaving) { exitReason = 'leave'; break; }
 
-    // Stay on this branch: a short still gap, then the same bunches minus
-    // the one just picked. (The next ladder drawn above goes unused.)
+    // Stay on this branch: the jitter (faded, as for a switch) without the
+    // pan, then the same bunches minus the one just picked. (The next
+    // ladder drawn above goes unused.)
     if (choice === 'stay') {
       const stayLad = takeSlot(harvested, pickSlot);
       scene.begin_stay();
-      const stayEnd = tGrid + jitterInt(...cfg.STAY_GAP_RANGE, rng);
+      const stayEnd = tGrid + jitterInt(...cfg.DECISION_GAP_RANGE, rng);
       const stayDraw = () => {
         scene.beginFrame();
         scene.draw_patch();
         scene.draw_skyline(stayLad);
         scene.drawHud(state.total_reward);
+        scene.draw_search_fade(sync.now() - tGrid);
       };
       const outcome = await hold(sync, runDuration, stayEnd, 'stay_branch', stayDraw, {
         run_id: runId, patch_id: patchId, patch_r0: f(patchR0),
