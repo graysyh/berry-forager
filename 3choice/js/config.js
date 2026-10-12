@@ -61,11 +61,11 @@ export const cfg = {
 
   // Travel
   TRAVEL_TIMES: [4.0, 8.0, 12.0],
-  TRAVEL_BUSH_W: 0.14,
-  TRAVEL_FORAGER_H: 0.11,
+  TRAVEL_BUSH_W: 0.22,          // 3choice: bigger (0.14 in the main build)
+  TRAVEL_FORAGER_H: 0.17,       // 3choice: bigger (0.11)
   TRAVEL_EDGE_MARGIN: 0.03,
   TRAVEL_STANDOFF: 0.035,
-  TRAVEL_FRAME_DIST: 0.012,
+  TRAVEL_FRAME_DIST: 0.019,     // 3choice: stride scaled with the walker (0.012)
   TRAVEL_GROUND_Y: -0.08,
 
   MISSED_PROMPT_DEFAULTS_TO_STAY: true,     // missed -> 'switch' (the old stay)
@@ -82,9 +82,11 @@ export const cfg = {
   // searches), so as many bushes are searched as fit the travel time; only
   // the last one turns out to have berries. Cosmetic only — the travel
   // duration is drawn exactly as before.
-  TRAVEL_WALK_PER_BUSH_S: 3.5,
+  TRAVEL_WALK_PER_BUSH_S: 4.0,
   TRAVEL_SEARCH_MIN_S: 2.0,
-  TRAVEL_BUSH_SPACING: 0.20,
+  TRAVEL_BUSH_SPACING: 0.42,    // mean gap; each bush is scattered around it
+  TRAVEL_SCATTER_X: 0.07,       // +/- horizontal scatter
+  TRAVEL_SCATTER_Y: [-0.07, 0.04],   // vertical scatter (down = nearer = bigger)
   TRAVEL_WALKER_SCREEN_X: -0.12,
 
   // Keys (browser KeyboardEvent.key, mapped to PsychoPy names in sync.js)

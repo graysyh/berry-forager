@@ -130,9 +130,9 @@ class Forager {
       im: imgs[k], w: man[k].w / ref * height, h: man[k].h / ref * height }));
   }
   get nFrames() { return this.frames.length; }
-  draw(v, x, yFeet, frame = 0) {
+  draw(v, x, yFeet, frame = 0, scale = 1) {
     const fr = this.frames[mod(frame, this.frames.length)];
-    v.image(fr.im, x, yFeet + fr.h / 2, fr.w, fr.h);
+    v.image(fr.im, x, yFeet + fr.h * scale / 2, fr.w * scale, fr.h * scale);
   }
 }
 
@@ -151,8 +151,8 @@ class Bush {
     this.canopy_h = this.h * Bush.CANOPY_H;
     this.canopy_w = width * Bush.CANOPY_W;
   }
-  draw(v, x, yGround, state = 'full') {
-    v.image(this.imgs[state], x, yGround + this.h / 2, this.width, this.h);
+  draw(v, x, yGround, state = 'full', scale = 1) {
+    v.image(this.imgs[state], x, yGround + this.h * scale / 2, this.width * scale, this.h * scale);
   }
   drawScaled(v, [cx, cy], scale, state = 'full', opacity = 1) {
     v.image(this.imgs[state], cx, cy - (this.canopy_y - this.h / 2) * scale,
@@ -168,7 +168,7 @@ export class Scene {
   static CANOPY_FRINGE = 0.25;
   static CANOPY_START = 0.85;
   static GROUND_Y = cfg.TRAVEL_GROUND_Y;
-  static TRAVEL_SEARCH_DX = 0.055;      // walker's spot left of a bush he searches
+  static TRAVEL_SEARCH_DX = 0.085;      // walker's spot left of a bush he searches
 
   constructor(canvas, assets) {
     this.v = new View(canvas);
@@ -185,6 +185,8 @@ export class Scene {
                                 cfg.TRAVEL_BUSH_W);
     this._travel_bush_xs = [0.0, 0.0];
     this._travel_start_x = 0.0;
+    // The bush the arrival zoom starts from: screen x, ground y, size.
+    this._arrive = { x: 0.0, y: Scene.GROUND_Y, s: 1.0 };
     this.meadow = imgs.meadow;
     this.splash = imgs.splash;
 
@@ -372,19 +374,19 @@ export class Scene {
       return;
     }
     const e = f * f;
-    const x0 = this._travel_bush_xs[1];
-    const y0 = Scene.GROUND_Y + this.travel_bush.canopy_y;
-    const w0 = this.travel_bush.canopy_w * Scene.CANOPY_START;
-    const h0 = this.travel_bush.canopy_h * Scene.CANOPY_START;
+    const { x: x0, y: yG, s: s0 } = this._arrive;
+    const y0 = yG + this.travel_bush.canopy_y * s0;
+    const w0 = this.travel_bush.canopy_w * Scene.CANOPY_START * s0;
+    const h0 = this.travel_bush.canopy_h * Scene.CANOPY_START * s0;
     const [w1, h1] = this._enter_end_size;
     const size = [w0 + (w1 - w0) * e, h0 + (h1 - h0) * e];
     const pos = [x0 * (1.0 - e), y0 * (1.0 - e)];
     const scale = Scene.CANOPY_ZOOM + (1.0 - Scene.CANOPY_ZOOM) * e;
 
     this._draw_background(true);
-    const grow = size[1] / h0;
+    const grow = s0 * size[1] / h0;
     this.travel_bush.drawScaled(v, pos, grow);
-    const sharp = clamp01((grow - 1.5) / 1.5);
+    const sharp = clamp01((grow / s0 - 1.5) / 1.5);
     if (sharp > 0) this.enter_bush.drawScaled(v, pos, grow, 'full', sharp);
     let fade = clamp01((f - 0.30) / 0.50);
     fade = fade * fade * (3.0 - 2.0 * fade);
@@ -667,83 +669,98 @@ export class Scene {
   }
 
   // ── Travel ────────────────────────────────────────────────────────
-  // Three-choice copy: the walk goes along an endless row of bushes that
-  // all look alike. The walker stops at each, rummages (the bush shakes, a
-  // "?" bubble), and walks on; the last one searched turns out to be full,
-  // and the arrival zoom starts from it. Nothing marks which bush that
-  // will be. Travel time is unchanged. Placeholder art.
+  // Three-choice copy: the walk goes through a loose, endless scatter of
+  // bushes that all look alike. The walker stops beside each in turn,
+  // rummages (the bush shakes), and walks on; the last one searched turns
+  // out to be full, and the arrival zoom starts from it. Nothing marks
+  // which bush that will be. Travel time is unchanged. Placeholder art.
+  //
+  // Bush i sits around world x = i * spacing, scattered in x and in y
+  // (depth: lower on screen = nearer = drawn bigger). The scatter is a
+  // fixed hash of i, so the full bush looks like any other.
+  _bush_at(i) {
+    const h = n => { const x = Math.sin(i * 127.1 + n * 311.7) * 43758.5453; return x - Math.floor(x); };
+    const [y0, y1] = cfg.TRAVEL_SCATTER_Y;
+    const dy = y0 + (y1 - y0) * h(2);
+    return { x: i * cfg.TRAVEL_BUSH_SPACING + cfg.TRAVEL_SCATTER_X * (2 * h(1) - 1),
+             y: Scene.GROUND_Y + dy, s: 1.0 - 1.4 * dy };
+  }
+  // Where the walker stands to search bush i: just left of it, a touch in front.
+  _search_spot(i) {
+    const b = this._bush_at(i);
+    return { x: b.x - Scene.TRAVEL_SEARCH_DX * b.s, y: b.y - 0.006, s: b.s };
+  }
+
   begin_travel(duration) {
-    const D = cfg.TRAVEL_BUSH_SPACING, w = cfg.TRAVEL_WALK_PER_BUSH_S;
+    const w = cfg.TRAVEL_WALK_PER_BUSH_S;
     const k = Math.max(1, Math.floor(duration / (w + cfg.TRAVEL_SEARCH_MIN_S)));
     const wk = Math.min(w, 0.6 * duration / k);       // only for very short trips
     const s = (duration - k * wk) / k;
-    // World x: the bush just left at 0, the bushes searched at D..kD; the
-    // walker stands just to the left of each, so the bush stays in view.
-    const SO = Scene.TRAVEL_SEARCH_DX;
+    // Start beside bush 0 (the one just left); search bushes 1..k.
     const plan = [];
     let t = 0;
     for (let i = 1; i <= k; i++) {
-      plan.push({ kind: 'walk', t0: t, t1: t + wk, x0: (i - 1) * D - SO, x1: i * D - SO });
+      const a = this._search_spot(i - 1), b = this._search_spot(i);
+      plan.push({ kind: 'walk', t0: t, t1: t + wk, a, b });
       t += wk;
-      plan.push({ kind: 'search', t0: t, t1: t + s, x0: i * D - SO, x1: i * D - SO, bush: i });
+      plan.push({ kind: 'search', t0: t, t1: t + s, a: b, b, bush: i });
       t += s;
     }
-    this._travel = { plan, k, D, duration };
-    // The full bush ends up under the walker: the arrival zoom starts there.
-    const xEnd = cfg.TRAVEL_WALKER_SCREEN_X + SO;
-    this._travel_bush_xs = [xEnd - k * D, xEnd];
+    this._travel = { plan, k, duration };
+    // The full bush's place on screen when the walk ends: the arrival zoom
+    // starts there.
+    const end = this._search_spot(k), full = this._bush_at(k);
+    this._arrive = { x: full.x - end.x + cfg.TRAVEL_WALKER_SCREEN_X, y: full.y, s: full.s };
     this._foliage_x = mod(this._foliage_x + this.FOLIAGE_W * 0.381966, this.FOLIAGE_W);
     this._foliage_y = 0.0;
     this._travelDuration = duration;
   }
 
-  // [walker world x, current segment, distance walked so far, fraction of segment]
+  // [walker {x, y, s}, current segment, distance walked so far, fraction of segment]
   _travel_state(t) {
     const { plan } = this._travel;
     let walked = 0;
     for (const seg of plan) {
+      const len = Math.hypot(seg.b.x - seg.a.x, seg.b.y - seg.a.y);
       if (t < seg.t1 || seg === plan[plan.length - 1]) {
         const u = clamp01((t - seg.t0) / Math.max(seg.t1 - seg.t0, 1e-6));
-        const x = seg.x0 + (seg.x1 - seg.x0) * u;
-        return [x, seg, walked + Math.abs(x - seg.x0), u];
+        const lerp = key => seg.a[key] + (seg.b[key] - seg.a[key]) * u;
+        return [{ x: lerp('x'), y: lerp('y'), s: lerp('s') }, seg, walked + len * u, u];
       }
-      walked += Math.abs(seg.x1 - seg.x0);
+      walked += len;
     }
   }
 
   draw_travel(tElapsed, tTotal) {
-    const v = this.v, G = Scene.GROUND_Y;
-    const { k, D } = this._travel;
+    const v = this.v;
+    const { k } = this._travel;
     this._draw_background(true);
     const t = Math.max(0.0, Math.min(tTotal, tElapsed));
-    const [wx, seg, walked, u] = this._travel_state(t);
-    const cam = wx - cfg.TRAVEL_WALKER_SCREEN_X;
-    const halfW = v.aspect / 2 + D;
+    const [me, seg, walked, u] = this._travel_state(t);
+    const cam = me.x - cfg.TRAVEL_WALKER_SCREEN_X;
+    const halfW = v.aspect / 2 + cfg.TRAVEL_BUSH_W;
     const searching = seg.kind === 'search';
     // The full bush shows itself in the last part of its search.
     const REVEAL_U = 0.6;
     const found = searching && seg.bush === k && u >= REVEAL_U;
 
-    for (let i = Math.floor((cam - halfW) / D); i <= Math.ceil((cam + halfW) / D); i++) {
+    // Far things first: bushes and the walker sorted by depth (ground y).
+    const items = [];
+    const D = cfg.TRAVEL_BUSH_SPACING;
+    for (let i = Math.floor((cam - halfW) / D) - 1; i <= Math.ceil((cam + halfW) / D) + 1; i++) {
+      const b = this._bush_at(i);
       let shake = 0;
       if (searching && seg.bush === i && u < REVEAL_U) {
-        shake = 0.006 * Math.sin(2 * Math.PI * 4 * (t - seg.t0));
+        shake = 0.007 * b.s * Math.sin(2 * Math.PI * 4 * (t - seg.t0));
       }
-      this.travel_bush.draw(v, i * D - cam + shake, G, found && i === k ? 'full' : 'picked');
+      items.push([b.y, () => this.travel_bush.draw(v, b.x - cam + shake, b.y,
+                                                   found && i === k ? 'full' : 'picked', b.s)]);
     }
-
-    // Walker: walking frames by distance; while rummaging, a slow two-frame
-    // fidget and a "?" bubble.
     let frame = 0;
     if (searching && !found) frame = Math.trunc((t - seg.t0) * 2.5) % 2;
     else if (!searching) frame = Math.trunc(walked / cfg.TRAVEL_FRAME_DIST);
-    const walkerX = cfg.TRAVEL_WALKER_SCREEN_X;
-    this.walker.draw(v, walkerX, G, frame);
-    if (searching && u < REVEAL_U) {
-      const by = G + cfg.TRAVEL_FORAGER_H + 0.045;
-      v.rect(walkerX + 0.025, by, 0.05, 0.045, [250, 250, 245], COL_PANEL_EDGE);
-      v.text('?', walkerX + 0.025, by, 0.032, COL_INK, { bold: true });
-    }
+    items.push([me.y, () => this.walker.draw(v, cfg.TRAVEL_WALKER_SCREEN_X, me.y, frame, me.s)]);
+    items.sort((p, q) => q[0] - p[0]).forEach(([, draw]) => draw());
   }
 
   // ── Title / end ───────────────────────────────────────────────────

@@ -16,13 +16,15 @@ at /berry-forager/3choice/:
    both v1 and v2 here); a branch stayed on until bare shows "No berries
    left on this branch" and no highlight.
 2. Travel: the walker goes along an endless row of bushes that all look
-   alike, stopping to search each one (bush shakes, "?" bubble) and walking
+   alike, scattered loosely (and drawn bigger than in the main build, since
+   travel distance no longer needs to fit on screen), stopping to search each
+   one (the bush shakes) and walking
    on, until one turns out to be full; nothing shows in advance which one.
-   It is slow on purpose: ~3.5 s walk per bush, the rest of the travel time
+   It is slow on purpose: ~4 s walk per bush, the rest of the travel time
    shared out over the searches (≥ 2 s each), so 1–3 bushes per trip. The
    travel time itself is unchanged. Placeholder art; settings
-   `TRAVEL_WALK_PER_BUSH_S`, `TRAVEL_SEARCH_MIN_S`, `TRAVEL_BUSH_SPACING`
-   in `js/config.js`.
+   `TRAVEL_WALK_PER_BUSH_S`, `TRAVEL_SEARCH_MIN_S`, `TRAVEL_BUSH_SPACING`,
+   `TRAVEL_SCATTER_*`, `TRAVEL_BUSH_W`, `TRAVEL_FORAGER_H` in `js/config.js`.
 
 Because of (1) this copy no longer matches the Python task value for
 value, so it has no parity tools.
