@@ -187,6 +187,7 @@ export class Scene {
     this._travel_start_x = 0.0;
     // The bush the arrival zoom starts from: screen x, ground y, size.
     this._arrive = { x: 0.0, y: Scene.GROUND_Y, s: 1.0 };
+    this._trip_base = 0;
     this.meadow = imgs.meadow;
     this.splash = imgs.splash;
 
@@ -679,7 +680,9 @@ export class Scene {
   // (depth: lower on screen = nearer = drawn bigger). The scatter is a
   // fixed hash of i, so the full bush looks like any other.
   _bush_at(i) {
-    const h = n => { const x = Math.sin(i * 127.1 + n * 311.7) * 43758.5453; return x - Math.floor(x); };
+    // Each trip reads a fresh stretch of the hash, so layouts don't repeat.
+    const j = i + this._trip_base;
+    const h = n => { const x = Math.sin(j * 127.1 + n * 311.7) * 43758.5453; return x - Math.floor(x); };
     const [y0, y1] = cfg.TRAVEL_SCATTER_Y;
     const dy = y0 + (y1 - y0) * h(2);
     return { x: i * cfg.TRAVEL_BUSH_SPACING + cfg.TRAVEL_SCATTER_X * (2 * h(1) - 1),
@@ -692,15 +695,28 @@ export class Scene {
   }
 
   begin_travel(duration) {
-    const w = cfg.TRAVEL_WALK_PER_BUSH_S;
-    const k = Math.max(1, Math.floor(duration / (w + cfg.TRAVEL_SEARCH_MIN_S)));
-    const wk = Math.min(w, 0.6 * duration / k);       // only for very short trips
-    const s = (duration - k * wk) / k;
-    // Start beside bush 0 (the one just left); search bushes 1..k.
+    this._trip_base += 1000;
+    // Start beside bush 0 (the one just left); walk at one steady speed and
+    // search bushes 1..k, k as many as fit with TRAVEL_SEARCH_MIN_S each.
+    const dist = i => {
+      const a = this._search_spot(i - 1), b = this._search_spot(i);
+      return Math.hypot(b.x - a.x, b.y - a.y);
+    };
+    let k = 1, walkT = dist(1) / cfg.TRAVEL_WALK_SPEED;
+    while (true) {
+      const next = walkT + dist(k + 1) / cfg.TRAVEL_WALK_SPEED;
+      if (next + (k + 1) * cfg.TRAVEL_SEARCH_MIN_S > duration) break;
+      k += 1; walkT = next;
+    }
+    // A trip too short even for one bush at that speed walks a bit faster
+    // (keeping a short search) rather than overrun the travel time.
+    const pace = Math.max(1.0, walkT / Math.max(duration - 1.0, 0.5 * duration));
+    const s = (duration - walkT / pace) / k;
     const plan = [];
     let t = 0;
     for (let i = 1; i <= k; i++) {
       const a = this._search_spot(i - 1), b = this._search_spot(i);
+      const wk = dist(i) / cfg.TRAVEL_WALK_SPEED / pace;
       plan.push({ kind: 'walk', t0: t, t1: t + wk, a, b });
       t += wk;
       plan.push({ kind: 'search', t0: t, t1: t + s, a: b, b, bush: i });
@@ -756,9 +772,9 @@ export class Scene {
       items.push([b.y, () => this.travel_bush.draw(v, b.x - cam + shake, b.y,
                                                    found && i === k ? 'full' : 'picked', b.s)]);
     }
-    let frame = 0;
-    if (searching && !found) frame = Math.trunc((t - seg.t0) * 2.5) % 2;
-    else if (!searching) frame = Math.trunc(walked / cfg.TRAVEL_FRAME_DIST);
+    // Walking frames by distance; standing still (frame 1, feet together)
+    // while searching.
+    const frame = searching ? 1 : Math.trunc(walked / cfg.TRAVEL_FRAME_DIST);
     items.push([me.y, () => this.walker.draw(v, cfg.TRAVEL_WALKER_SCREEN_X, me.y, frame, me.s)]);
     items.sort((p, q) => q[0] - p[0]).forEach(([, draw]) => draw());
   }

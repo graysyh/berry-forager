@@ -20,10 +20,10 @@ at /berry-forager/3choice/:
    travel distance no longer needs to fit on screen), stopping to search each
    one (the bush shakes) and walking
    on, until one turns out to be full; nothing shows in advance which one.
-   It is slow on purpose: ~4 s walk per bush, the rest of the travel time
+   It is slow on purpose: a steady walk (~4 s per bush), the rest of the travel time
    shared out over the searches (≥ 2 s each), so 1–3 bushes per trip. The
    travel time itself is unchanged. Placeholder art; settings
-   `TRAVEL_WALK_PER_BUSH_S`, `TRAVEL_SEARCH_MIN_S`, `TRAVEL_BUSH_SPACING`,
+   `TRAVEL_WALK_SPEED`, `TRAVEL_SEARCH_MIN_S`, `TRAVEL_BUSH_SPACING`,
    `TRAVEL_SCATTER_*`, `TRAVEL_BUSH_W`, `TRAVEL_FORAGER_H` in `js/config.js`.
 
 Because of (1) this copy no longer matches the Python task value for
