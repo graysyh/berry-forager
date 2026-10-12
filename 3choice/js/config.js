@@ -65,7 +65,7 @@ export const cfg = {
   TRAVEL_FORAGER_H: 0.17,       // 3choice: bigger (0.11)
   TRAVEL_EDGE_MARGIN: 0.03,
   TRAVEL_STANDOFF: 0.035,
-  TRAVEL_FRAME_DIST: 0.019,     // 3choice: stride scaled with the walker (0.012)
+  TRAVEL_FRAME_DIST: 0.038,     // 3choice: slower leg cycle, ~3 steps/s at TRAVEL_WALK_SPEED (0.012)
   TRAVEL_GROUND_Y: -0.08,
 
   MISSED_PROMPT_DEFAULTS_TO_STAY: true,     // missed -> 'switch' (the old stay)
