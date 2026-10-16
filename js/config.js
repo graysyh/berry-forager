@@ -111,7 +111,8 @@ export const cfg = {
 
   SCANNER_MODE: false,
 
-  // Web-only trial variant (the /v2/ page turns it on; not in config.py).
+  // Web-only variant, on by default in index.html (?v1 turns it off; not in
+  // config.py). Left false here so the parity tools still match the Python.
   // Bushes never run dry: the peak bottoms out at 1 and every bush keeps at
   // least 2 branches with berries; the highlight hops only between branches
   // that still have berries; the MVT "blind press" value averages over

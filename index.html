@@ -78,8 +78,9 @@ const $ = id => document.getElementById(id);
 const q = new URLSearchParams(location.search);
 let assets;
 
-// Version 2 (?v2, or the /v2/ page): no empty branches — see config.js.
-if (q.has('v2')) {
+// Version 2 is the default: no empty branches — see config.js. ?v1 runs
+// the original (Python-matching) bushes; ?v2 and the /v2/ page still work.
+if (!q.has('v1')) {
   cfg.NO_EMPTY_BRANCHES = true;
   cfg.VARIANT = 'v2';
   $('sub').textContent = 'Foraging task (MVT build) · version 2';
