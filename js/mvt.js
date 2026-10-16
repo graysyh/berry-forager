@@ -305,7 +305,8 @@ export class MvtTracker {
   }
 
   agreement(key = 'mvt_suggested_leave') {
-    const rows = this.prompts.filter(p => 'choice' in p);
+    // Missed prompts are asked again, so only answered ones count.
+    const rows = this.prompts.filter(p => 'choice' in p && p.choice !== 'missed');
     if (!rows.length) return [0, 0, 0, 0.0];
     const left = rows.filter(p => p.choice === 'leave').length;
     const sugg = rows.filter(p => p[key]).length;

@@ -7,7 +7,7 @@ source of truth for the design; this build reproduces its logic exactly
 same data files.
 
 **Run it:** open the published page, fill in the participant ID, and press
-Start. Keys: `Space` pick · `F` stay · `J` explore · `D` MVT debug panel ·
+Start. Keys: `Space` pick · `F` continue picking here · `J` find new bush · `D` MVT debug panel ·
 `Esc` quit. At the end (or on quit) a zip with the events, patches,
 timeline, triggers and meta files is downloaded.
 

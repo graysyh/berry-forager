@@ -61,14 +61,31 @@ export const cfg = {
 
   // Travel
   TRAVEL_TIMES: [4.0, 8.0, 12.0],
-  TRAVEL_BUSH_W: 0.14,
-  TRAVEL_FORAGER_H: 0.11,
+  TRAVEL_BUSH_W: 0.22,
+  TRAVEL_FORAGER_H: 0.17,
   TRAVEL_EDGE_MARGIN: 0.03,
   TRAVEL_STANDOFF: 0.035,
-  TRAVEL_FRAME_DIST: 0.012,
+  TRAVEL_FRAME_DIST: 0.038,     // leg cycle, ~3 steps/s at TRAVEL_WALK_SPEED
   TRAVEL_GROUND_Y: -0.08,
 
-  MISSED_PROMPT_DEFAULTS_TO_STAY: true,
+  // Travel walk (web only; not in config.py): a loose scatter of
+  // identical-looking bushes. The walker walks to the next one at a steady
+  // TRAVEL_WALK_SPEED (height units / s) and searches it (at least
+  // TRAVEL_SEARCH_MIN_S; the travel time left over is shared out over the
+  // searches), so as many bushes are searched as fit the travel time; only
+  // the last one turns out to have berries. Cosmetic only — the travel
+  // duration is drawn exactly as before.
+  TRAVEL_WALK_SPEED: 0.11,      // ~4 s per bush at the mean spacing
+  TRAVEL_SEARCH_MIN_S: 2.0,
+  TRAVEL_BUSH_SPACING: 0.42,    // mean gap; each bush is scattered around it
+  TRAVEL_SCATTER_X: 0.06,       // +/- horizontal scatter
+  TRAVEL_SCATTER_Y: [-0.07, 0.04],   // vertical scatter (down = nearer = bigger)
+  TRAVEL_WALKER_SCREEN_X: -0.12,
+
+  // Missed prompt (web only): no default choice. "Too slow!", the screen
+  // greys out for a DECISION_GAP_RANGE jitter, then the prompt comes back
+  // (a new prompt_id) until they answer.
+  MISSED_PROMPT_REPROMPT: true,
 
   // Keys (browser KeyboardEvent.key, mapped to PsychoPy names in sync.js)
   KEY_STAY: 'f',

@@ -250,7 +250,7 @@ async function runPrompt(sync, scene, logger, runDuration, a) {
 
   let out;
   if (abortedInAlign) out = 'quit';
-  else if (choice === 'missed') out = cfg.MISSED_PROMPT_DEFAULTS_TO_STAY ? 'stay' : 'leave';
+  else if (choice === 'missed') out = cfg.MISSED_PROMPT_REPROMPT ? 'missed' : 'stay';
   else out = choice;
   return [out, rt, missed, tGrid];
 }
@@ -328,14 +328,39 @@ async function runPatch(sync, scene, logger, runId, patchId, runDuration, state)
     const harvested = lad;
     const bgDraw = () => { scene.draw_patch(); scene.draw_skyline(harvested, 1.0, pickSlot); };
 
-    const [choice, , , tGrid] = await runPrompt(sync, scene, logger, runDuration, {
-      run_id: runId, patch_id: patchId, prompt_id: state.prompt_id,
-      harvest_index: nHarvests - 1, total_reward: state.total_reward,
-      tracker, next_lad: nextLad, bgDraw,
-      tags: { run_id: runId, patch_id: patchId, patch_r0: f(patchR0),
-              harvest_index: nHarvests - 1, ladder_peak: nextLad.peak,
-              total_reward: state.total_reward },
-    });
+    // Ask until they answer: a missed prompt gets "Too slow!" and a greyed-out
+    // pause (a DECISION_GAP_RANGE jitter), then a fresh prompt.
+    let choice, tGrid, pauseOutcome = 'ok';
+    while (true) {
+      const tags = { run_id: runId, patch_id: patchId, patch_r0: f(patchR0),
+                     harvest_index: nHarvests - 1, ladder_peak: nextLad.peak,
+                     total_reward: state.total_reward };
+      [choice, , , tGrid] = await runPrompt(sync, scene, logger, runDuration, {
+        run_id: runId, patch_id: patchId, prompt_id: state.prompt_id,
+        harvest_index: nHarvests - 1, total_reward: state.total_reward,
+        tracker, next_lad: nextLad, bgDraw, tags,
+      });
+      if (choice !== 'missed') break;
+      const t0 = tGrid, pauseEnd = tGrid + jitterInt(...cfg.DECISION_GAP_RANGE, rng);
+      scene.show_warning('Too slow!');
+      let last = sync.now();
+      const pauseDraw = () => {
+        const now = sync.now(), dt = now - last;
+        last = now;
+        scene.beginFrame();
+        bgDraw();
+        scene.drawHud(state.total_reward);
+        scene.draw_search_fade(now - t0);
+        scene.draw_warning(dt);
+      };
+      pauseOutcome = await hold(sync, runDuration, pauseEnd, 'prompt_timeout', pauseDraw,
+                                { ...tags, prompt_id: state.prompt_id });
+      if (pauseOutcome !== 'ok') break;
+      state.prompt_id += 1;
+      nPrompts += 1;
+    }
+    if (pauseOutcome === 'abort') { exitReason = 'abort'; break; }
+    if (pauseOutcome === 'run_end') { exitReason = 'run_end'; break; }
 
     if (choice === 'quit') { exitReason = 'abort'; break; }
     const leaving = choice === 'leave';
